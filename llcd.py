@@ -119,7 +119,7 @@ def clean_dir_name(dir_name):
     return no_bad_chars.strip()
 
 
-def download_subtitles(file_path, file_name):
+def download_subtitles(file_path, file_name, descargar):
 
     # from translate import Translator
     # translator = Translator(from_lang="english", to_lang="spanish")
@@ -144,10 +144,9 @@ def download_subtitles(file_path, file_name):
                     transcriptEndAt = milliseconds = subtitles[index_next_subtitle]['transcriptStartAt']
                 caption = subtitle['caption']
                 # print caption
-                sub_esp = caption
-                # sub_esp = translator.translate(caption)
-                sub_esp = translator.translate(
-                    caption, src='auto', dest='es').text
+                if(descargar):
+                    caption = translator.translate(
+                        caption, src='auto', dest='es').text
                 # print translation
                 # write to file (line for line)
                 subtitle_file.write(str(index_next_subtitle)+'\n')
@@ -157,7 +156,7 @@ def download_subtitles(file_path, file_name):
                 subtitle_file.write(str(to_hhmmssms(transcriptEndAt))+'\n')
                 # subtitle_file.write('\n')
                 # subtitle_file.write(caption)
-                subtitle_file.write(sub_esp+'\n\n')
+                subtitle_file.write(caption+'\n\n')
                 # subtitle_file.write('\n\n')
                 index_next_subtitle += 1
         subtitle_file.close()
@@ -177,16 +176,17 @@ def to_hhmmssms(ms):
     return "%02d:%02d:%02d,%03d" % (hr, min, sec, ms)
 
 
-def to_esp(text, traductor):
+def to_esp(text, traductor, activado):
     sys.setdefaultencoding('iso-8859-1')
 
-    try:
-        text_esp = traductor.translate(text, src='auto', dest='es').text
-    except (OSError, IOError) as exc:
-        print("[SUB] --- Error de traduccion en : "+text+"  {}".format(exc))
-        return text
+    if(activado):
+        try:
+            return traductor.translate(text, src='auto', dest='es').text
+        except (OSError, IOError) as exc:
+            print("[SUB] --- Error de traduccion en : "+text+"  {}".format(exc))
+            return text
 
-    return text_esp
+    return text
 
 
 if __name__ == '__main__':
@@ -196,6 +196,8 @@ if __name__ == '__main__':
     cookies['JSESSIONID'] = 'ajax:4332914976342601831'
 
     file_type_srt = '.srt'
+
+    traducir = False  # cambiar a True para cursos un ingles
 
     traductor = Translator()
 
@@ -217,7 +219,7 @@ if __name__ == '__main__':
                 print("[!] Server-Reponse: 429 (Too Many Requests). Thus your account has been temporarily blocked by LinkedIn.\n[!] Try again in 12 hours. Each new made request in that time will reset and/or double the waiting time.")
             exit(0)
         else:
-            course_name = to_esp(course_name, traductor)
+            course_name = to_esp(course_name, traductor, traducir)
             print('[*] Descargando curso [%s]' % course_name)
 
             # Material extra -----------------------------------------------------------
@@ -264,7 +266,7 @@ if __name__ == '__main__':
             cap = 1
             for chapter in chapters:
                 chapter_name = str(
-                    cap) + ' ' + to_esp(clean_dir_name(chapter['title']), traductor)
+                    cap) + ' ' + to_esp(clean_dir_name(chapter['title']), traductor, traducir)
                 # chapter_name = str(cap) + ' '+chapter_name
                 cap = cap+1
                 videos = chapter['videos']
@@ -279,7 +281,7 @@ if __name__ == '__main__':
                 for video in videos:
                     # video_name = re.sub(r'[\\/*?:"<>|]', "", video['title'])
                     video_name = to_esp(clean_dir_name(
-                        video['title']), traductor)
+                        video['title']), traductor, traducir)
                     #  video_name = re.sub(ur'[^\x00-\x7F]', u'', video_name)
                     video_slug = video['slug']
                     video_url = 'https://www.linkedin.com/learning-api/detailedCourses' \
@@ -329,7 +331,7 @@ if __name__ == '__main__':
                             print('[!] ------ Subtitlulo ya descargado.')
                         else:
                             download_subtitles(file_path, str(
-                                vc)+'. '+file_name + file_type_srt)
+                                vc)+'. '+file_name + file_type_srt, traducir)
 
                             print('[*] ------ Subtitulo [OK] ')
 
